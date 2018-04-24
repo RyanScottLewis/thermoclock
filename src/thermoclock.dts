@@ -1,0 +1,42 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+  compatible = "brcm,bcm2835", "brcm,bcm2836", "brcm,bcm2708", "brcm,bcm2709";
+
+  /* disable spi-dev for spi0.0 */
+
+  fragment@0 {
+    target = <&spidev0>;
+    __overlay__ {
+      status = "disabled";
+    };
+  };
+
+
+  /* the spi config */
+
+  fragment@1 {
+    target = <&spi0>;
+    __overlay__ {
+      /* needed to avoid dtc warning */
+      #address-cells = <1>;
+      #size-cells = <0>;
+      status = "okay";
+
+      thermoclock0: thermoclock@0 {
+        reg = <0>; /* CE0 */
+        compatible = "thermoclock";
+        spi-max-frequency = <20000000>;
+        //interrupt-parent = <&gpio>;
+        //interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
+      };
+    };
+  };
+
+  __overrides__ {
+    spimaxfrequency = <&thermoclock0>,"spi-max-frequency:0";
+  };
+
+};
+
