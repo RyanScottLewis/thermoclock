@@ -3,8 +3,7 @@
 #define THERMOCLOCK_BANK_0 (1 << 16)
 #define THERMOCLOCK_BANK_1 (1 << 23)
 
-// The complement of the bit offset for the segment is XOR'd with the bank the segment is NOT in to
-// return the correct data.
+// The complement of the bit offset for the segment is XOR'd with the bank the segment is NOT in.
 
 #define THERMOCLOCK_0A ( ~(1 << 18) ^ THERMOCLOCK_BANK_1 )
 #define THERMOCLOCK_0B ( ~(1 << 22) ^ THERMOCLOCK_BANK_0 )

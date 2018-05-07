@@ -106,11 +106,12 @@ static ssize_t thermoclock_read(struct file *filep, char *buffer, size_t len, lo
 static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t len, loff_t *offset) {
   struct thermoclock_state *state = filep->private_data;
 
-  // Last byte must be pushed out first
-  // LSB_FIRST is not supported either so we reverse first
-  message[0] = 0b11111111; 
-  message[1] = 0b11111111; 
-  message[2] = 0b01111111;
+  // Keeping it portable
+  // Last byte must be pushed out first, LSB_FIRST is not supported either so we reverse
+  // Dividing instead of some union ot bitfield nonsense for 24 bit "word"
+  message[0] = THERMOCLOCK_MON/65536;
+  message[1] = THERMOCLOCK_MON/256;
+  message[2] = THERMOCLOCK_MON;
 
   spi_write(state->spi, message, 3);
 
