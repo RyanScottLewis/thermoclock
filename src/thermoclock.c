@@ -8,13 +8,15 @@
 #include <linux/spi/spi.h>
 #include <linux/uaccess.h>
 
+#include "thermoclock.h"
+
 #define DEVICE_NAME        "thermoclock"
 #define CLASS_NAME         "thermoclock"
 #define THERMOCLOCK_MAJOR (1)
 static int thermoclock_major = THERMOCLOCK_MAJOR;
 
-static short messageSize;          // Used to remember the size of the string stored
-static char  message[256] = "omg"; // Memory for the string that is passed from userspace
+static short messageSize;  // Used to remember the size of the string stored
+static char  message[256]; // Memory for the string that is passed from userspace
 
 struct thermoclock_state {
 
@@ -104,7 +106,13 @@ static ssize_t thermoclock_read(struct file *filep, char *buffer, size_t len, lo
 static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t len, loff_t *offset) {
   struct thermoclock_state *state = filep->private_data;
 
-  spi_write(state->spi, buffer, 1);
+  // Last byte must be pushed out first
+  // LSB_FIRST is not supported either so we reverse first
+  message[0] = 0b11111111; 
+  message[1] = 0b11111111; 
+  message[2] = 0b01111111;
+
+  spi_write(state->spi, message, 3);
 
   return len;
 }
@@ -119,7 +127,6 @@ static int thermoclock_release(struct inode *inodep, struct file *filep) {
 
 static int thermoclock_probe(struct spi_device* spi) {
   struct thermoclock_state *state  = NULL;
-  /*struct class             *class  = NULL;*/
   static struct device     *devicep = NULL;  // The device driver device struct pointer
   int                      ret;
 
@@ -136,7 +143,7 @@ static int thermoclock_probe(struct spi_device* spi) {
   // Setup SPI bus
 
   spi->bits_per_word = 8;
-  spi->mode = SPI_MODE_0;
+  spi->mode          = SPI_MODE_0;
 
   ret = spi_setup(spi);
   if (ret < 0) goto out;
