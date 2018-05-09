@@ -92,4 +92,4 @@ sudo pacman -S linux-raspberrypi-headers
 
 > TODO
 
-[pinout]: ./src/Pinout.md
+[pinout]: ./doc/Pinout.md
