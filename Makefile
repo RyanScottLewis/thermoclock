@@ -6,6 +6,8 @@ include /usr/share/rive/make/env.make
 
 C    = $(filter %.c,$(SOURCES))
 DTS  = $(filter %.dts,$(SOURCES))
+SYS  = $(filter %.service,$(SOURCES))
+EXE  = $(SRCDIR)/thermoclock
 DTBO = $(DTS:$(SRCDIR)/%.dts=$(BUILDDIR)/%.dtbo)
 KO   = $(C:$(SRCDIR)/%.c=$(BUILDDIR)/%.ko.gz)
 
@@ -15,6 +17,8 @@ MODDIR    = /lib/modules/$(ARCH)
 
 DEST_KO   = $(DESTDIR)/$(MODDIR)/kernel/drivers/rypi
 DEST_DTBO = $(DESTDIR)/boot/overlays
+DEST_EXE  = $(DESTDIR)/usr/bin
+DEST_SYS  = $(DESTDIR)/usr/lib/systemd/system
 
 include /usr/share/rive/make/build.make
 include /usr/share/rive/make/install.make
@@ -26,10 +30,17 @@ build:: $(DTBO) $(KO)
 install::
 	$(call install,$(DTBO),$(DEST_DTBO))
 	$(call install,$(KO),$(DEST_KO))
+	$(call install,$(SYS),$(DEST_SYS))
+	$(call install,$(EXE),$(DEST_EXE),655)
+	depmod
+	modprobe thermoclock
 
 uninstall::
 	$(call uninstall,$(DTBO),$(DEST_DTBO))
 	$(call uninstall,$(KO),$(DEST_KO))
+	$(call uninstall,$(SYS),$(DEST_SYS))
+	$(call uninstall,$(EXE),$(DEST_EXE))
+	rmmod thermoclock
 
 $(KO): $(C)
 	touch $(BUILDDIR)/Makefile # I don't like this. But, it works.
