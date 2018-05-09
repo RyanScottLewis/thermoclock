@@ -66,9 +66,18 @@ of vision to give the illusion that all of the segments are active at the same t
 
 The display can also be cleared, if needed with `thermoclock --clear` or `thermoclock -c`
 
+## SystemD Service
+
+The application can be started with `sudo systemctl start thermoclock` and started at boot
+with `sudo systemctl enable thermoclock`.
+
 ## TODO
 
+* Build dependencies
+  * rive-devel-tools is required!
+* Pacman package
 * Display temp
+  * Add thermister module and support
   * NOAA/Wunderground APIs
 * Eliminate flickers
   * Use binary format?
