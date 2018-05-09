@@ -76,11 +76,6 @@ unsigned char thermoclock_bitreverse(unsigned char b) {
   return b;
 }
 
-const u32 thermoclock_lookup_segment(const char *name) {
-
-  return -EINVAL;
-}
-
 static char *thermoclock_devnode(struct device *dev, umode_t *mode) {
   if (!mode) return NULL;
 
@@ -129,7 +124,6 @@ static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t 
   unsigned char              *command;
 
   for (segment = thermoclock_segments; segment->name != NULL; ++segment) {
-    /*printk(KERN_INFO "SEGMENT MATCHING BOOP BOOP: %s - %s\n", buffer, segment->name);*/
     if (strncmp(segment->name, buffer, len-1) == 0) {
       state = filep->private_data;
       struct spi_transfer transfer = {
@@ -139,22 +133,14 @@ static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t 
       };
       command = (unsigned char*)&segment->value;
 
-      printk(KERN_INFO "LEN: %d\n", len);
-      printk(KERN_INFO "VAL: %d\n", segment->value);
-      printk(KERN_INFO "MSG: %s\n", buffer);
-
       if (segment->value < 0) return len;
 
       state->tx[0] = thermoclock_bitreverse(command[0]);
       state->tx[1] = thermoclock_bitreverse(command[1]);
       state->tx[2] = thermoclock_bitreverse(command[2]);
 
-      printk(KERN_INFO "TX:  %02x %02x %02x\n", state->tx[2], state->tx[1], state->tx[0]);
-
       // TODO: Check errors
       spi_sync_transfer(state->spi, &transfer, 1);
-
-      printk(KERN_INFO "RX:  %02x %02x %02x\n", state->rx[2], state->rx[1], state->rx[0]);
 
       return len;
     }
