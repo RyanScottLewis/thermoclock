@@ -1,0 +1,10 @@
+# vim:ft=config:
+[Unit]
+Description=Thermoclock
+
+[Service]
+ExecStart=/usr/bin/thermoclock
+
+[Install]
+WantedBy=default.target
+

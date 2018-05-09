@@ -1,0 +1,154 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+
+module Thermoclock
+  # Generates commands that will be sent to the thermoclock character driver
+  class CommandGenerator
+    DIGIT_SEGMENTS = {
+      " " => "",
+      "0" => "ABCDEF",
+      "1" => "BC",
+      "2" => "ABDEG",
+      "3" => "ABCDG",
+      "4" => "BCFG",
+      "5" => "ACDFG",
+      "6" => "CDEFG",
+      "7" => "ABC",
+      "8" => "ABCDEFG",
+      "9" => "ABCFG",
+    }
+
+    def digit(digit, value)
+      DIGIT_SEGMENTS[value].chars.map { |segment| "#{digit}#{segment}" }
+    end
+
+    def day(time)
+      time.strftime("%^a")
+    end
+
+    def commands_for(time)
+      commands = []
+
+      commands << "DP" if time.sec.even? 
+      commands << "AM" if time.hour < 12
+      commands << day(time)
+
+      time_fmt = time.strftime("%l%M")
+      4.times { |digit| commands += digit(digit, time_fmt[digit]) }
+
+      commands
+    end
+  end
+
+  # The interface to the thermoclock character driver
+  class Interface
+    def open
+      @file = File.open("/dev/thermoclock", "a+")
+    end
+
+    def close
+      return if @file.nil?
+
+      @file.close
+      @file = nil
+    end
+
+    def send(command)
+      return if @file.nil?
+
+      @file.puts(command)
+      @file.flush
+    end
+
+    def clear
+      send("CLS")
+    end
+  end
+
+  class OptionsController
+    def initialize(app)
+      @app    = app
+      @parser = OptionParser.new
+
+      setup_parser
+    end
+
+    def run(arguments)
+      @parser.parse(arguments)
+    end
+
+    protected
+
+    def setup_parser
+      @parser.banner = "Usage: thermoclock [options]"
+
+      @parser.on("-c", "--clear", "Just clear display and exit") do
+        @app.quit
+      end
+
+      @parser.on_tail("-h", "--help", "Display help") do
+        puts @parser
+
+        @app.quit
+      end
+    end
+  end
+
+  # The application and facade class
+  class Application
+    def initialize
+      @generator = CommandGenerator.new
+      @interface = Interface.new
+      @options   = OptionsController.new(self)
+    end
+
+    def run(arguments)
+      at_exit(&method(:quit))
+      trap("INT", &method(:quit))
+
+      @options.run(arguments)
+
+      @interface.open
+      run_loop
+    end
+
+    def quit(*arguments)
+      @interface.clear
+      @interface.close
+
+      exit
+    end
+
+    protected
+
+    def run_loop
+      current_time = Time.now
+      last_time    = current_time - 1
+      commands     = @generator.commands_for(current_time).cycle
+
+      loop do
+        until current_time.sec != last_time.sec
+          current_time = Time.now
+
+          @interface.send(commands.next)
+
+          sleep 0.001 # Sleep to keep the CPU usage down
+        end
+
+        last_time = current_time
+        commands  = @generator.commands_for(current_time).cycle
+      end
+
+    end
+  end
+
+  def self.run
+    Application.new.run(ARGV)
+  end
+end
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+Thermoclock.run
+

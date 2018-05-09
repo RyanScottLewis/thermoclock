@@ -1,8 +1,17 @@
 #!/usr/bin/env ruby
 
 file = File.open("/dev/thermoclock", "a+")
+
 #commands = %w(MON TUE WED THU FRI SAT SUN AM DP AL1 BAT 0A 0B 0C 0D 0E 0F 0G 1A 1B 1C 1D 1E 1F 1G 2A 2B 2C 2D 2E 2F 2G 3A 3B 3C 3D 3E 3F 3G).cycle 
-commands = %w(MON TUE WED THU FRI SAT SUN).cycle
+
+commands = [
+  %w(MON TUE WED THU FRI SAT SUN),
+  %w(AM DP AL1 BAT),
+  %w(0A 0B 0C 0D 0E 0G),
+  %w(1A 1B 1C 1D 1E 1F 1G),
+  %w(2A 2B 2C 2D 2E 2F 2G),
+  %w(3A 3B 3C 3D 3E 3F 3G),
+]
 
 trap("INT") do
   file.close
@@ -10,10 +19,15 @@ trap("INT") do
 end
 
 puts "Starting"
-loop do
-  command = commands.next
-  #p command
-  file.puts command
-  file.flush
-  #sleep 0.01
+
+commands.cycle.each do |list|
+  start = Time.now
+  while Time.now < start + 1
+    list.each do |command|
+      #p command
+      file.puts command
+      file.flush
+      sleep 0.001 # Sleep to keep the CPU usage down
+    end
+  end
 end
