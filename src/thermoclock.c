@@ -131,9 +131,7 @@ static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t 
         .tx_buf = state->tx,
         .len    = 3,
       };
-      command = (unsigned char*)&segment->value;
-
-      if (segment->value < 0) return len;
+      command = (unsigned char*)&segment->value; // TODO: Needed?
 
       state->tx[0] = thermoclock_bitreverse(command[0]);
       state->tx[1] = thermoclock_bitreverse(command[1]);
@@ -158,7 +156,7 @@ static int thermoclock_release(struct inode *inodep, struct file *filep) {
 // == SPI device ===================================================================================
 
 static int thermoclock_probe(struct spi_device* spi) {
-  struct thermoclock_state *state  = NULL;
+  struct thermoclock_state *state   = NULL;
   static struct device     *devicep = NULL;  // The device driver device struct pointer
   int                      ret;
 
