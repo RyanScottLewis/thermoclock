@@ -8,6 +8,8 @@
 #include <linux/spi/spi.h>
 #include <linux/uaccess.h>
 
+#include <linux/string.h>
+
 #include "thermoclock.h"
 
 #define DEVICE_NAME        "thermoclock"
@@ -15,11 +17,7 @@
 #define THERMOCLOCK_MAJOR (1)
 static int thermoclock_major = THERMOCLOCK_MAJOR;
 
-static short messageSize;  // Used to remember the size of the string stored
-static char  message[256]; // Memory for the string that is passed from userspace
-
 struct thermoclock_state {
-
   // SPI device
   struct spi_device *spi;
 
@@ -28,6 +26,12 @@ struct thermoclock_state {
   struct cdev  cdev;
   struct class *class;
   dev_t        devno;
+
+  // Buffers
+  short messageSize;
+  char  message[256];
+  char  rx[3];
+  char  tx[3];
 };
 
 // -- Forward declarations -------------------------------------------------------------------------
@@ -65,10 +69,22 @@ static struct spi_driver thermoclock_spi_driver = {
   .id_table = thermoclock_ids,
 };
 
+unsigned char thermoclock_bitreverse(unsigned char b) {
+  b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+  b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+  b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+  return b;
+}
+
+const u32 thermoclock_lookup_segment(const char *name) {
+
+  return -EINVAL;
+}
 
 static char *thermoclock_devnode(struct device *dev, umode_t *mode) {
   if (!mode) return NULL;
 
+  // TODO: Sup with this
   /*if (dev->devt == MKDEV(THERMOCLOCK_MAJOR, 0) || dev->devt == MKDEV(THERMOCLOCK_MAJOR, 2)) {*/
     *mode = 0666;
   /*}*/
@@ -92,10 +108,12 @@ static int thermoclock_open(struct inode *inodep, struct file *filep) {
 }
 
 static ssize_t thermoclock_read(struct file *filep, char *buffer, size_t len, loff_t *offset) {
-  int errors = copy_to_user(buffer, message, messageSize);
+  struct thermoclock_state *state = filep->private_data;
+
+  int errors = copy_to_user(buffer, state->message, state->messageSize);
 
   if (errors == 0) {
-    messageSize = 0;
+    state->messageSize = 0;
 
     return 0;
   } else {
@@ -103,17 +121,44 @@ static ssize_t thermoclock_read(struct file *filep, char *buffer, size_t len, lo
   }
 }
 
+// Keeping it portable
+// Last byte must be pushed out first, LSB_FIRST is not supported either so we reverse
 static ssize_t thermoclock_write(struct file *filep, const char *buffer, size_t len, loff_t *offset) {
-  struct thermoclock_state *state = filep->private_data;
+  struct thermoclock_segment *segment;
+  struct thermoclock_state   *state;
+  unsigned char              *command;
 
-  // Keeping it portable
-  // Last byte must be pushed out first, LSB_FIRST is not supported either so we reverse
-  // Dividing instead of some union ot bitfield nonsense for 24 bit "word"
-  message[0] = THERMOCLOCK_MON/65536;
-  message[1] = THERMOCLOCK_MON/256;
-  message[2] = THERMOCLOCK_MON;
+  for (segment = thermoclock_segments; segment->name != NULL; ++segment) {
+    /*printk(KERN_INFO "SEGMENT MATCHING BOOP BOOP: %s - %s\n", buffer, segment->name);*/
+    if (strncmp(segment->name, buffer, len-1) == 0) {
+      state = filep->private_data;
+      struct spi_transfer transfer = {
+        .rx_buf = state->rx,
+        .tx_buf = state->tx,
+        .len    = 3,
+      };
+      command = (unsigned char*)&segment->value;
 
-  spi_write(state->spi, message, 3);
+      printk(KERN_INFO "LEN: %d\n", len);
+      printk(KERN_INFO "VAL: %d\n", segment->value);
+      printk(KERN_INFO "MSG: %s\n", buffer);
+
+      if (segment->value < 0) return len;
+
+      state->tx[0] = thermoclock_bitreverse(command[0]);
+      state->tx[1] = thermoclock_bitreverse(command[1]);
+      state->tx[2] = thermoclock_bitreverse(command[2]);
+
+      printk(KERN_INFO "TX:  %02x %02x %02x\n", state->tx[2], state->tx[1], state->tx[0]);
+
+      // TODO: Check errors
+      spi_sync_transfer(state->spi, &transfer, 1);
+
+      printk(KERN_INFO "RX:  %02x %02x %02x\n", state->rx[2], state->rx[1], state->rx[0]);
+
+      return len;
+    }
+  }
 
   return len;
 }

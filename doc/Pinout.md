@@ -1,5 +1,7 @@
 # Stuff
 
+TODO: Hash table would be better than using strcmp every time? Probably.
+
 ## Notation
 
 > All indicies are zero-based.
