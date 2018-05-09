@@ -19,7 +19,7 @@
 #define THERMOCLOCK_1D ( ~(1 << 9 ) ^ THERMOCLOCK_BANK_1 )
 #define THERMOCLOCK_1E ( ~(1 << 15) ^ THERMOCLOCK_BANK_1 )
 #define THERMOCLOCK_1F ( ~(1 << 21) ^ THERMOCLOCK_BANK_1 )
-#define THERMOCLOCK_1G ( ~(1 << 15) ^ THERMOCLOCK_BANK_1 )
+#define THERMOCLOCK_1G ( ~(1 << 8 ) ^ THERMOCLOCK_BANK_1 )
 
 #define THERMOCLOCK_2A ( ~(1 << 13) ^ THERMOCLOCK_BANK_1 )
 #define THERMOCLOCK_2B ( ~(1 << 14) ^ THERMOCLOCK_BANK_1 )
@@ -45,10 +45,10 @@
 #define THERMOCLOCK_SAT ( ~(1 << 1 ) ^ THERMOCLOCK_BANK_0 )
 #define THERMOCLOCK_SUN ( ~(1 << 6 ) ^ THERMOCLOCK_BANK_1 )
 
-#define THERMOCLOCK_AM  ( ~(1 << 17) ^ THERMOCLOCK_BANK_0 )
-#define THERMOCLOCK_DP  ( ~(1 << 10) ^ THERMOCLOCK_BANK_0 )
-#define THERMOCLOCK_AL1 ( ~(1 << 17) ^ THERMOCLOCK_BANK_1 )
-#define THERMOCLOCK_BAT ( ~(1 << 3 ) ^ THERMOCLOCK_BANK_1 )
+#define THERMOCLOCK_AM  ( ~(1 << 17) ^ THERMOCLOCK_BANK_1 )
+#define THERMOCLOCK_DP  ( ~(1 << 10) ^ THERMOCLOCK_BANK_1 )
+#define THERMOCLOCK_AL1 ( ~(1 << 17) ^ THERMOCLOCK_BANK_0 )
+#define THERMOCLOCK_BAT ( ~(1 << 3 ) ^ THERMOCLOCK_BANK_0 )
 
 // Not using typedef because Linux conventions
 struct thermoclock_segment {
@@ -104,5 +104,6 @@ struct thermoclock_segment thermoclock_segments[] = {
   THERMOCLOCK_SEGMENT(AL1)
   THERMOCLOCK_SEGMENT(BAT)
 
-  { NULL, 0 }
+  { "CLS", 0 },
+  { NULL, 0 },
 };
