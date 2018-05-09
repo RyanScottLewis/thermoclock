@@ -27,7 +27,8 @@
       thermoclock0: thermoclock@0 {
         reg = <0>; /* CE0 */
         compatible = "thermoclock";
-        spi-max-frequency = <20000000>;
+        spi-max-frequency = <125000000>; // 125MHz (Half the system clock speed of 250MHz)
+
         //interrupt-parent = <&gpio>;
         //interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
       };
