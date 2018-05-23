@@ -81,7 +81,9 @@ with `sudo systemctl enable thermoclock`.
   * NOAA/Wunderground APIs
 * Eliminate flickers
   * Use binary format?
-  * Send raw commands directly instead of translating within the char driver?
+    * Send raw commands directly instead of translating within the char driver?
+  * Send the list of commands to loop and have the driver loop them. This way, the driver is only parsing the list once, then simply storing the raw commands to loop over
+  * See `doc/External Timer Idea.md`
 
 ## Development
 
